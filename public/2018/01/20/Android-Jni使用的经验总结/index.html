@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>android jni使用经验总结 | My Life</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  
+  
+  
+  
+  <meta name="description" content="这段时间因为开始编写与硬件结合的一个软件项目，使用到了大量的jni调用，这里总结一下使用要点">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Android Jni使用经验总结">
+<meta property="og:url" content="http://yoursite.com/2018/01/20/Android-Jni使用的经验总结/index.html">
+<meta property="og:site_name" content="My Life">
+<meta property="og:description" content="这段时间因为开始编写与硬件结合的一个软件项目，使用到了大量的jni调用，这里总结一下使用要点">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://img.blog.csdn.net/20160803150457429?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast">
+<meta property="og:image" content="http://img.blog.csdn.net/20160803160351099?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast">
+<meta property="og:image" content="http://img.blog.csdn.net/20160803163127532?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast">
+<meta property="og:image" content="http://img.blog.csdn.net/20160803163555931?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast">
+<meta property="og:image" content="http://img.blog.csdn.net/20161222172524036?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvdTAxMDY1NzIxOQ==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast">
+<meta property="og:image" content="http://img.blog.csdn.net/20161222172604318?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvdTAxMDY1NzIxOQ==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast">
+<meta property="og:image" content="http://img.blog.csdn.net/20161222172650742?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvdTAxMDY1NzIxOQ==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast">
+<meta property="og:image" content="http://img.blog.csdn.net/20161222172721226?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvdTAxMDY1NzIxOQ==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast">
+<meta property="og:updated_time" content="2018-06-04T11:41:41.695Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Android Jni使用经验总结">
+<meta name="twitter:description" content="这段时间因为开始编写与硬件结合的一个软件项目，使用到了大量的jni调用，这里总结一下使用要点">
+<meta name="twitter:image" content="http://img.blog.csdn.net/20160803150457429?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast">
+  
+    <link rel="alternate" href="/atom.xml" title="My Life" type="application/atom+xml">
+  
+
+  
+
+  <link rel="icon" href="/css/images/mylogo.jpg">
+  <link rel="apple-touch-icon" href="/css/images/mylogo.jpg">
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans|Montserrat:700" rel="stylesheet" type="text/css">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,300,300italic,400italic" rel="stylesheet" type="text/css">
+  <link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+  <style type="text/css">
+    @font-face{font-family:futura-pt;src:url(https://use.typekit.net/af/9749f0/00000000000000000001008f/27/l?subset_id=2&fvd=n5) format("woff2");font-weight:500;font-style:normal;}
+    @font-face{font-family:futura-pt;src:url(https://use.typekit.net/af/90cf9f/000000000000000000010091/27/l?subset_id=2&fvd=n7) format("woff2");font-weight:500;font-style:normal;}
+    @font-face{font-family:futura-pt;src:url(https://use.typekit.net/af/8a5494/000000000000000000013365/27/l?subset_id=2&fvd=n4) format("woff2");font-weight:lighter;font-style:normal;}
+    @font-face{font-family:futura-pt;src:url(https://use.typekit.net/af/d337d8/000000000000000000010095/27/l?subset_id=2&fvd=i4) format("woff2");font-weight:400;font-style:italic;}</style>
+  <link rel="stylesheet" href="/css/style.css">
+
+  <script src="/js/jquery-3.1.1.min.js"></script>
+  <script src="/js/bootstrap.js"></script>
+
+  <!-- Bootstrap core CSS -->
+  <link rel="stylesheet" href="/css/bootstrap.css" >
+
+  
+    <link rel="stylesheet" href="/css/dialog.css">
+  
+
+  
+
+  
+    <link rel="stylesheet" href="/css/header-post.css" >
+  
+
+  
+  
+  
+    <link rel="stylesheet" href="/css/vdonate.css" >
+  
+
+</head>
+
+
+
+  <body data-spy="scroll" data-target="#toc" data-offset="50">
+
+
+  
+  <div id="container">
+    <div id="wrap">
+      
+        <header>
+
+    <div id="allheader" class="navbar navbar-default navbar-static-top" role="navigation">
+        <div class="navbar-inner">
+          
+          <div class="container"> 
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+
+            
+              <a class="brand" style="
+                 margin-top: 0px;"  
+                href="#" data-toggle="modal" data-target="#myModal" >
+                  <img width="124px" height="124px" alt="Hike News" src="/css/images/mylogo.jpg">
+              </a>
+            
+            
+            <div class="navbar-collapse collapse">
+              <ul class="hnav navbar-nav">
+                
+                  <li> <a class="main-nav-link" href="/">Home</a> </li>
+                
+                  <li> <a class="main-nav-link" href="/archives">Archives</a> </li>
+                
+                  <li> <a class="main-nav-link" href="/categories">Categories</a> </li>
+                
+                  <li> <a class="main-nav-link" href="/tags">Tags</a> </li>
+                
+                  <li> <a class="main-nav-link" href="/about">About</a> </li>
+                
+                  <li><div id="search-form-wrap">
+
+    <form class="search-form">
+        <input type="text" class="ins-search-input search-form-input" placeholder="" />
+        <button type="submit" class="search-form-submit"></button>
+    </form>
+    <div class="ins-search">
+    <div class="ins-search-mask"></div>
+    <div class="ins-search-container">
+        <div class="ins-input-wrapper">
+            <input type="text" class="ins-search-input" placeholder="Type something..." />
+            <span class="ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: 'Posts',
+            PAGES: 'Pages',
+            CATEGORIES: 'Categories',
+            TAGS: 'Tags',
+            UNTITLED: '(Untitled)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+<script src="/js/insight.js"></script>
+
+</div></li>
+            </div>
+          </div>
+                
+      </div>
+    </div>
+
+</header>
+
+
+
+      
+            
+      <div id="content" class="outer">
+        
+          <section id="main" style="float:none;"><article id="post-Android-Jni使用的经验总结" style="width: 75%; float:left;" class="article article-type-post" itemscope itemprop="blogPost" >
+  <div id="articleInner" class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="thumb" class="article-title" itemprop="name">
+      Android Jni使用经验总结
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      
+	<a href="/2018/01/20/Android-Jni使用的经验总结/" class="article-date">
+	  <time datetime="2018-01-20T08:07:46.000Z" itemprop="datePublished">2018-01-20</time>
+	</a>
+
+      
+      
+	<a class="article-views">
+	<span id="busuanzi_container_page_pv">
+		PV:<span id="busuanzi_value_page_pv"></span>
+	</span>
+	</a>
+
+    </div>
+    <div class="article-entry" itemprop="articleBody">
+      
+        <hr>
+<p>这段时间因为开始编写与硬件结合的一个软件项目，使用到了大量的jni调用，这里总结一下使用要点  </p>
+<a id="more"></a>
+<p>首先开始我们的环境搭建，Android studio的环境搭建还是比较简单的，在Sdk Manager里找到NDK并安装，安装好的NDk一般位于你的sdk文件夹下的ndk-bundle，然后将该路径配置到你系统变量的path里面去<br>cmd命令输入<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ndk build</span><br></pre></td></tr></table></figure></p>
+<p>如果未提示”ndk-build不是系统命令”就表示NDK环境配置完成了!</p>
+<p>对于app来说，一些对图片的处理、视频的处理等等需要复杂算法支持的功能，很多都会选择用C语言写成，然后APP端去调用C语言方法，得到经过算法处理之后的结果，jni就是Java和C之间调用的桥梁<br>在前端时间的项目中，因为需要大量的使用类似活体检测、人脸校准之类的算法，所以必不可少的接触到了jni的使用</p>
+<h4 id="Android-studio2-2-3之前的jni调用（此处举例）"><a href="#Android-studio2-2-3之前的jni调用（此处举例）" class="headerlink" title="Android studio2.2.3之前的jni调用（此处举例）"></a>Android studio2.2.3之前的jni调用（此处举例）</h4><h5 id="在Java的demo里编写如下代码"><a href="#在Java的demo里编写如下代码" class="headerlink" title="在Java的demo里编写如下代码"></a>在Java的demo里编写如下代码</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MainActivity</span> <span class="keyword">extends</span> <span class="title">Activity</span> </span>&#123;  </span><br><span class="line">  </span><br><span class="line">    <span class="keyword">static</span> &#123;  </span><br><span class="line">        System.loadLibrary(<span class="string">"JniTest"</span>);  </span><br><span class="line">    &#125;  </span><br><span class="line">  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">native</span> String <span class="title">getStringFromNative</span><span class="params">()</span></span>;  </span><br><span class="line">  </span><br><span class="line">    <span class="meta">@Override</span>  </span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle savedInstanceState)</span> </span>&#123;  </span><br><span class="line">        <span class="keyword">super</span>.onCreate(savedInstanceState);  </span><br><span class="line">         </span><br><span class="line">        getStringFromNative(); </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此处根据你写的native的方法名等下生成C语言的.h头文件</p>
+<h5 id="在app文件夹下的build-gradle文件里面配置Ndk相关信息"><a href="#在app文件夹下的build-gradle文件里面配置Ndk相关信息" class="headerlink" title="在app文件夹下的build.gradle文件里面配置Ndk相关信息"></a>在app文件夹下的build.gradle文件里面配置Ndk相关信息</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ndk &#123;  </span><br><span class="line">    moduleName <span class="string">"JniTest"</span>  </span><br><span class="line">    ldLibs <span class="string">"log"</span>, <span class="string">"z"</span>, <span class="string">"m"</span>  </span><br><span class="line">    abiFilters <span class="string">"armeabi"</span>, <span class="string">"armeabi-v7a"</span>, <span class="string">"x86"</span>  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>基本看代码可以看懂，指定加载so库的名称为JniTest，这个只是为了举例取的名称，加载的abi平台为armeabi、armeabi-v7a和x86<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">sourceSets&#123;  </span><br><span class="line">    main&#123;  </span><br><span class="line">        jniLibs.srcDirs = [<span class="string">'libs'</span>]  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>指定加载so库的路径为libs  </p>
+<h5 id="生成需要的-h头文件"><a href="#生成需要的-h头文件" class="headerlink" title="生成需要的.h头文件"></a>生成需要的.h头文件</h5><p>在Android Studio下方的Terminal命令行里面执行生成命令,如果没有Terminal,到”View-&gt;Tool Windows-&gt;Terminal”里面打开该面板<br>操作命令:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">javah -d jni -classpath &lt;SDK_android.jar&gt;;&lt;dir path&gt; 加载So所在的class包名+class名</span><br></pre></td></tr></table></figure></p>
+<p>后面的 “dir path” 加载So所在的class包名+class名 是相对于你当前所在目录的路径;</p>
+<p>参考命令:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">C:\git_source\demo\JniTest&gt;javah -d jni -classpath C:\studio\android-sdk-windows\platforms\android-23\android.jar;app\src\main\java com.example.jni.jnitest.MainActivity</span><br></pre></td></tr></table></figure></p>
+<p>这里的后面一部分是相对于”C:\git_source\demo\JniTest”目录的路径</p>
+<h5 id="注意：很多人写命令行的时候容易写错，app-src-main-java后面是空格-接-包名-类名"><a href="#注意：很多人写命令行的时候容易写错，app-src-main-java后面是空格-接-包名-类名" class="headerlink" title="注意：很多人写命令行的时候容易写错，app\src\main\java后面是空格 接 包名.类名"></a>注意：很多人写命令行的时候容易写错，<code>app\src\main\java</code>后面是空格 接 包名.类名</h5><p>命令执行成功会自动生成一个jni文件夹和对应的”包名.h”文件,这里的文件名是:com_example_jni_jnitest_MainActivity.h  </p>
+<figure><br>   <img src="http://img.blog.csdn.net/20160803150457429?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast"><br></figure>  
+
+
+<p>.h文件中的代码如下<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">JNIEXPORT jstring JNICALL <span class="title">Java_com_example_jni_jnitest_MainActivity_getStringFromNative</span><span class="params">(JNIEnv * env, jobject jObj)</span></span>&#123;  </span><br><span class="line">      <span class="keyword">return</span> (*env)-&gt;NewStringUTF(env,<span class="string">"Hello From JNI!"</span>);    </span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
+<p>这里的方法就是根据你的native方法生成的头信息,我们来解析一下意思<br><code>JNIEXPORT和JNICALL</code>：jni关键字就跟Java里的关键字一样<br><code>jstring</code>：   方法的返回值为string<br><code>Java_com_example_jni_jnitest_MainActivity_getStringFromNative</code> ：  格式为Java_+包名_+调用jni方法的类名_+方法名  如果包名里包含下划线，则用_1代替</p>
+<p>接下来就是编写你的C语言代码了，如果你不会写C语言代码，那就是得有底层给你.cpp的文件或者.C的文件，我们只需要将我们刚刚生成的头文件里的方法声明，去替换C语言文件里的方法声明，这样C语言的方法就可以被Java调用了</p>
+<h5 id="编辑Android-mk和Application-mk"><a href="#编辑Android-mk和Application-mk" class="headerlink" title="编辑Android.mk和Application.mk"></a>编辑Android.mk和Application.mk</h5><p>按照前面第一步的图里面的jni包里面有一个Android.mk文件和Application.mk文件,这里我们需要创建这两个文件，还有一个main.c文件就是我们需要生成so库的文件，Android.mk文件和Application.mk文件是用来控制编译So文件的, Android.mk文件控制So文件如何编译, Application.mk文件控制支持的架构平台.</p>
+<p>Android.mk文件:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">LOCAL_PATH := $(call my-dir)  </span><br><span class="line">  </span><br><span class="line">include $(CLEAR_VARS)  </span><br><span class="line">#bzlib模块  </span><br><span class="line">bzlib_files := \  </span><br><span class="line">    main.c  </span><br><span class="line">  </span><br><span class="line">LOCAL_MODULE := libbz  </span><br><span class="line">LOCAL_SRC_FILES := $(bzlib_files)  </span><br><span class="line">include $(BUILD_STATIC_LIBRARY)  </span><br><span class="line">  </span><br><span class="line">#bspath模块  </span><br><span class="line">include $(CLEAR_VARS)  </span><br><span class="line">LOCAL_MODULE    := main  </span><br><span class="line">LOCAL_SRC_FILES := main.c  </span><br><span class="line">LOCAL_STATIC_LIBRARIES := libbz #引入libbz库  </span><br><span class="line">  </span><br><span class="line">include $(BUILD_STATIC_LIBRARY)  </span><br><span class="line">  </span><br><span class="line">include $(CLEAR_VARS)  </span><br><span class="line">  </span><br><span class="line">LOCAL_MODULE    := JniTest  </span><br><span class="line">LOCAL_SRC_FILES := main.c  </span><br><span class="line">LOCAL_STATIC_LIBRARIES := main  </span><br><span class="line">LOCAL_LDLIBS := -llog#加入log  </span><br><span class="line">  </span><br><span class="line">include $(BUILD_SHARED_LIBRARY)</span><br></pre></td></tr></table></figure></p>
+<p><code>&quot;bzlib_files :&quot;</code>里面放的是所有的c源文件;<code>&quot;LOCAL_MODULE := JniTest&quot;</code>表示生成的So库名,因为我加载So库的名字是”JniTest”所以这里需要同名;<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> &#123;  </span><br><span class="line">        System.loadLibrary(<span class="string">"JniTest"</span>);  </span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></p>
+<p>Application.mk文件:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">APP_CFLAGS += -Wno-error=format-security  </span><br><span class="line">APP_ABI := armeabi</span><br></pre></td></tr></table></figure></p>
+<p>APP_ABI := armeabi 表示只支持armeabi架构的Jni,如需添加其他架构可在后面追加</p>
+<h5 id="最后一步：生成-so文件"><a href="#最后一步：生成-so文件" class="headerlink" title="最后一步：生成.so文件"></a>最后一步：生成.so文件</h5><p>在CMD命令行里面cd到项目的目录下, 输入”ndk-build”生成So包<br><img src="http://img.blog.csdn.net/20160803160351099?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast" alt=""><br>命令执行成功后在工程的libs文件夹下面生成一个So文件,如下:<br><img src="http://img.blog.csdn.net/20160803163127532?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast" alt=""><br>如果不添加Application.mk文件,会生成所有架构的So文件,如下:<br><img src="http://img.blog.csdn.net/20160803163555931?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast" alt=""></p>
+<p>编译出来的So默认是放在工程里面的libs文件夹下的,需要将它移到app文件夹下的libs里面!</p>
+<h4 id="2-2-3之后的Jni调用"><a href="#2-2-3之后的Jni调用" class="headerlink" title="2.2.3之后的Jni调用"></a>2.2.3之后的Jni调用</h4><p>从AndroidStudio2.2开始，studio可以利用NDK直接编译C/C++代码。AndroidStudio 支持Cmake和NDK-BUILD 工具编译本地代码，但是默认方式为Cmake。<br>在用AndroidStudio开发native应用之前先要下载好NDK，Cmake，LLDB(本地代码调试工具)，可以直接通过studio的SDK Manager进行安装，安装完成如下路所示：<br><img src="http://img.blog.csdn.net/20161222172524036?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvdTAxMDY1NzIxOQ==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast" alt=""></p>
+<p>创建可以编译C/C++的工程<br><img src="http://img.blog.csdn.net/20161222172604318?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvdTAxMDY1NzIxOQ==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast" alt=""><br>直接选择next，其他跟普通工程无异，直到Customize C++ support 界面，如下图所示：<br><img src="http://img.blog.csdn.net/20161222172650742?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvdTAxMDY1NzIxOQ==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast" alt=""></p>
+<ol>
+<li>C++ Standard：Toolchain Default 会使用默认的 CMake 设置。</li>
+<li>Exceptions Support：对 C++ 异常处理的支持,如果启用此复选框，Android Studio 会将 -fexceptions 标志添加到模块级 build.gradle 文件的 cppFlags 中，Gradle 会将其传递到 CMake。</li>
+<li>Runtime Type Information Support：如果希望支持 RTTI，选中此复选框,Android Studio 会将 -frtti 标志添加到模块级 build.gradle 文件的 cppFlags 中，Gradle 会将其传递到 CMake。</li>
+</ol>
+<p>选择好后，最后点击Finish<br>稍等片刻，简直不敢相信自己的眼睛，简直辣眼睛，自动生成项目结构如下如所示：<br><img src="http://img.blog.csdn.net/20161222172721226?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvdTAxMDY1NzIxOQ==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast" alt=""></p>
+<p>所有的模板已经生成好了，只需要往里面填代码即可！无需生成.so库，直接可以调用jni方法，studio编译会自动生成.so库，大大简化了以前要自己生成.so库的过程！</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      
+        <div id="donation_div"></div>
+
+<script src="/js/vdonate.js"></script>
+<script>
+var a = new Donate({
+  title: '如果觉得我的文章对您有用，请随意打赏。您的支持将鼓励我继续创作!', // 可选参数，打赏标题
+  btnText: 'Donate', // 可选参数，打赏按钮文字
+  el: document.getElementById('donation_div'),
+  wechatImage: 'https://raw.githubusercontent.com/iTimeTraveler/iTimeTraveler.github.io/site/source/about/donate/images/WeChanQR.png',
+  alipayImage: 'https://raw.githubusercontent.com/iTimeTraveler/iTimeTraveler.github.io/site/source/about/donate/images/AliPayQR.jpg'
+});
+</script>
+      
+      
+        
+	<div id="comment">
+		<!-- 来必力City版安装代码 -->
+		<div id="lv-container" data-id="city" data-uid="MTAyMC8yOTQ4MS82MDQ5">
+		<script type="text/javascript">
+		   (function(d, s) {
+		       var j, e = d.getElementsByTagName(s)[0];
+
+		       if (typeof LivereTower === 'function') { return; }
+
+		       j = d.createElement(s);
+		       j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+		       j.async = true;
+
+		       e.parentNode.insertBefore(j, e);
+		   })(document, 'script');
+		</script>
+		<noscript>为正常使用来必力评论功能请激活JavaScript</noscript>
+		</div>
+		<!-- City版安装代码已完成 -->
+	</div>
+
+
+
+      
+      
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2018/06/04/hello-world/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Hello World
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2018/01/20/大坑-push进system-app-之后-so库无法加载/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">(大坑) apk push进system/app/之后.so库无法加载</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+<!-- Table of Contents -->
+
+  <aside id="toc-sidebar">
+    <div id="toc" class="toc-article">
+    <strong class="toc-title">Contents</strong>
+    
+        <ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#Android-studio2-2-3之前的jni调用（此处举例）"><span class="nav-number">1.</span> <span class="nav-text">Android studio2.2.3之前的jni调用（此处举例）</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#在Java的demo里编写如下代码"><span class="nav-number">1.1.</span> <span class="nav-text">在Java的demo里编写如下代码</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#在app文件夹下的build-gradle文件里面配置Ndk相关信息"><span class="nav-number">1.2.</span> <span class="nav-text">在app文件夹下的build.gradle文件里面配置Ndk相关信息</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#生成需要的-h头文件"><span class="nav-number">1.3.</span> <span class="nav-text">生成需要的.h头文件</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#注意：很多人写命令行的时候容易写错，app-src-main-java后面是空格-接-包名-类名"><span class="nav-number">1.4.</span> <span class="nav-text">注意：很多人写命令行的时候容易写错，app\src\main\java后面是空格 接 包名.类名</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#编辑Android-mk和Application-mk"><span class="nav-number">1.5.</span> <span class="nav-text">编辑Android.mk和Application.mk</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#最后一步：生成-so文件"><span class="nav-number">1.6.</span> <span class="nav-text">最后一步：生成.so文件</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-3之后的Jni调用"><span class="nav-number">2.</span> <span class="nav-text">2.2.3之后的Jni调用</span></a></li></ol>
+    
+    </div>
+  </aside>
+</section>
+        
+      </div>
+      
+      <footer id="footer">
+  
+
+  <div class="container">
+      	<div class="row">
+	      <p> Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> and <a href="https://github.com/iTimeTraveler/hexo-theme-hiker" target="_blank">Hexo-theme-hiker</a> </p>
+	      <p id="copyRightEn">Copyright &copy; 2013 - 2018 My Life All Rights Reserved.</p>
+	      
+	      
+    		<p class="busuanzi_uv">
+				UV : <span id="busuanzi_value_site_uv"></span> |  
+				PV : <span id="busuanzi_value_site_pv"></span>
+		    </p>
+  		   
+		</div>
+
+		
+  </div>
+</footer>
+
+
+<!-- min height -->
+
+<script>
+    var wrapdiv = document.getElementById("wrap");
+    var contentdiv = document.getElementById("content");
+    var allheader = document.getElementById("allheader");
+
+    wrapdiv.style.minHeight = document.body.offsetHeight + "px";
+    if (allheader != null) {
+      contentdiv.style.minHeight = document.body.offsetHeight - allheader.offsetHeight - document.getElementById("footer").offsetHeight + "px";
+    } else {
+      contentdiv.style.minHeight = document.body.offsetHeight - document.getElementById("footer").offsetHeight + "px";
+    }
+</script>
+    </div>
+    <!-- <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+    <a href="/categories" class="mobile-nav-link">Categories</a>
+  
+    <a href="/tags" class="mobile-nav-link">Tags</a>
+  
+    <a href="/about" class="mobile-nav-link">About</a>
+  
+</nav> -->
+    
+
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/scripts.js"></script>
+
+
+
+
+  <script src="/js/dialog.js"></script>
+
+
+
+
+
+
+
+
+	<div style="display: none;">
+    <script src="https://s95.cnzz.com/z_stat.php?id=1260716016&web_id=1260716016" language="JavaScript"></script>
+  </div>
+
+
+
+	<script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+	</script>
+
+
+
+
+
+
+  </div>
+
+  <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="myModalLabel">设置</h2>
+      </div>
+      <hr style="margin-top:0px; margin-bottom:0px; width:80%; border-top: 3px solid #000;">
+      <hr style="margin-top:2px; margin-bottom:0px; width:80%; border-top: 1px solid #000;">
+
+
+      <div class="modal-body">
+          <div style="margin:6px;">
+            <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne" onclick="javascript:setFontSize();" aria-expanded="true" aria-controls="collapseOne">
+              正文字号大小
+            </a>
+          </div>
+          <div id="collapseOne" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
+          <div class="panel-body">
+            您已调整页面字体大小
+          </div>
+        </div>
+      
+
+
+          <div style="margin:6px;">
+            <a data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" onclick="javascript:setBackground();" aria-expanded="true" aria-controls="collapseTwo">
+              夜间护眼模式
+            </a>
+        </div>
+          <div id="collapseTwo" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingTwo">
+          <div class="panel-body">
+            夜间模式已经开启，再次单击按钮即可关闭 
+          </div>
+        </div>
+
+        <div>
+            <a data-toggle="collapse" data-parent="#accordion" href="#collapseThree" aria-expanded="true" aria-controls="collapseThree">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;关 于&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</a>
+        </div>
+         <div id="collapseThree" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingThree">
+          <div class="panel-body">
+            My Life
+          </div>
+          <div class="panel-body">
+            Copyright © 2018 流氓 All Rights Reserved.
+          </div>
+        </div>
+      </div>
+
+
+      <hr style="margin-top:0px; margin-bottom:0px; width:80%; border-top: 1px solid #000;">
+      <hr style="margin-top:2px; margin-bottom:0px; width:80%; border-top: 3px solid #000;">
+      <div class="modal-footer">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+  
+  <a id="rocket" href="#top" class=""></a>
+  <script type="text/javascript" src="/js/totop.js?v=1.0.0" async=""></script>
+  
+    <a id="menu-switch"><i class="fa fa-bars fa-lg"></i></a>
+  
+</body>
+</html>
